@@ -1,6 +1,8 @@
 package mitchgordon.me.popularposts;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -16,6 +18,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.facebook.Request;
 import com.facebook.Response;
@@ -78,10 +81,18 @@ public class MainActivity extends Activity {
 
         authButton.setReadPermissions("read_stream");
 
+        final AlertDialog progressDialog =
+                new AlertDialog.Builder(this)
+                .setTitle("Please Wait")
+                .setMessage("Retrieving posts...")
+                .setNeutralButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .create();
+
         uiHelper = new UiLifecycleHelper(this, (session, state, exception) -> {
             if(session.isOpened()) {
-                Log.d("PopularPosts", session.getAccessToken());
-                // Grab the posts and display them.
+                // Grab the posts from the server and put them in a stream
+                progressDialog.show();
+
                 Observable<Post> postsStream = Observable.create( subscriber -> {
                     Request request = Request.newGraphPathRequest(session, "/me/feed", response -> {});
                     Bundle params = new Bundle();
@@ -89,7 +100,6 @@ public class MainActivity extends Activity {
                     request.setParameters(params);
                     while(request != null) {
                         Response resp = Request.executeBatchAndWait(request).get(0);
-                        Log.d("PopularPosts", "Got a response.");
                         if(resp.getError() != null)
                             subscriber.onError((Throwable)resp.getError().getException());
 
@@ -120,6 +130,7 @@ public class MainActivity extends Activity {
                     subscriber.onCompleted();
                 });
 
+                // Accumulate posts, sort and display
                 postsStream
                 .toSortedList()
                 .subscribeOn(Schedulers.newThread())
@@ -130,9 +141,10 @@ public class MainActivity extends Activity {
                                 postsLV.setAdapter(new ArrayAdapter<Post>(getApplicationContext(),
                                         R.layout.simple_list_item,
                                         sortedPosts.toArray(new Post[sortedPosts.size()])));
+                                progressDialog.dismiss();
                             } );
                 },
-                e -> Log.e("PopularPosts", e.getMessage()));
+                e -> runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Exception: " + e.getMessage(), Toast.LENGTH_LONG)));
             }
             else {
                 // Show the title and hide the posts
