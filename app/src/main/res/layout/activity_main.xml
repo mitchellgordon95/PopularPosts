@@ -17,13 +17,12 @@
         android:id="@+id/titleTV"
         android:textSize="50dp"
         android:layout_above="@+id/view"
-        android:layout_marginTop="89dp" />
+        android:layout_marginTop="89dp"
+        android:layout_marginBottom="120dp"/>
 
     <com.facebook.widget.LoginButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="120dp"
-        android:layout_marginBottom="120dp"
         android:id="@+id/loginButton" />
 
     <ListView

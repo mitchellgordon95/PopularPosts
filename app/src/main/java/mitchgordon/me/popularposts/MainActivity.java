@@ -83,7 +83,10 @@ public class MainActivity extends Activity {
                 Log.d("PopularPosts", session.getAccessToken());
                 // Grab the posts and display them.
                 Observable<Post> postsStream = Observable.create( subscriber -> {
-                    Request request = Request.newGraphPathRequest(session, "/me/feed?fields=likes.limit(1).summary(true),message", response -> {});
+                    Request request = Request.newGraphPathRequest(session, "/me/feed", response -> {});
+                    Bundle params = new Bundle();
+                    params.putString("fields", "likes.limit(1).summary(true),message");
+                    request.setParameters(params);
                     while(request != null) {
                         Response resp = Request.executeBatchAndWait(request).get(0);
                         Log.d("PopularPosts", "Got a response.");
@@ -98,7 +101,8 @@ public class MainActivity extends Activity {
 
                             int likes;
                             try {
-                                likes = postJSON.getJSONObject("likes").getJSONArray("data").length();
+                                likes = postJSON.getJSONObject("likes").getJSONObject("summary")
+                                        .getInt("total_count");
                             }
                             catch(Exception e) { likes = 0;};
                             String msg;
